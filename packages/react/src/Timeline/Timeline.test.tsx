@@ -1,8 +1,8 @@
 import { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '@medplum/react-hooks';
 import { Timeline, TimelineItem } from './Timeline';
 
 const medplum = new MockClient();
@@ -11,7 +11,7 @@ describe('Timeline', () => {
   test('Renders', async () => {
     const resource: Communication = {
       resourceType: 'Communication',
-    };
+    } as Communication;
 
     render(
       <MemoryRouter>
