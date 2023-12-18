@@ -18,7 +18,7 @@ export async function handler(medplum: MedplumClient): Promise<any> {
   const messages: Communication[] = await medplum.searchResources('Communication', {
     sent: `lt${timeStamp}`,
     'part-of:missing': false,
-    'part-of:Communication.status': 'in-progress',
+    // 'part-of:Communication.status': 'in-progress',
   });
 
   // Filter for messages sent by patients
@@ -71,6 +71,7 @@ export async function handler(medplum: MedplumClient): Promise<any> {
         // If somebody has already responded to this thread, assign the task to them, otherwise assign to care coordinator queue
         if (sender) {
           task.owner = sender;
+          console.log('Assigned to most recent responder');
         } else {
           task.performerType = [
             {
@@ -83,9 +84,11 @@ export async function handler(medplum: MedplumClient): Promise<any> {
               ],
             },
           ];
+          console.log('Assigned to care coordinator queue');
         }
 
-        await medplum.createResource(task);
+        await medplum.createResource(task).then((result) => console.log(result));
+        console.log('Task created');
       } else {
         console.log('Task already exists for this thread.');
       }
@@ -97,25 +100,30 @@ export async function handler(medplum: MedplumClient): Promise<any> {
 
 // Organize a bundle of communication search responses into an object of the thread header and all messages
 function organizeThreads(messages: BundleEntry[], threads: Record<string, Communication[]>): void {
-  for (const message of messages) {
-    const communication = message.resource;
-    if (communication?.resourceType !== 'Communication' || !communication.partOf) {
-      continue;
+  const communicationsBundle = messages[0].resource as Bundle;
+  const communications = communicationsBundle.entry;
+
+  if (communications) {
+    for (const entry of communications) {
+      const message = entry.resource;
+      if (message?.resourceType !== 'Communication' || !message.partOf) {
+        continue;
+      }
+
+      // Get the communication's thread header as a reference string
+      const partOf = message.partOf;
+
+      const threadHeader = partOf.filter((reference) => parseReference(reference)?.[0] === 'Communication')[0];
+
+      const threadReferenceString = getReferenceString(threadHeader);
+
+      // Group the communication with the rest of it's thread
+      if (!threads[threadReferenceString]) {
+        threads[threadReferenceString] = [];
+      }
+
+      threads[threadReferenceString].push(message);
     }
-
-    // Get the communication's thread header as a reference string
-    const partOf = communication.partOf;
-
-    const threadHeader = partOf.filter((resource) => resource.resource?.resourceType === 'Communication')[0];
-
-    const threadReferenceString = getReferenceString(threadHeader);
-
-    // Group the communication with the rest of it's thread
-    if (!threads[threadReferenceString]) {
-      threads[threadReferenceString] = [];
-    }
-
-    threads[threadReferenceString].push(communication);
   }
 }
 
@@ -152,6 +160,8 @@ function buildSearchBundle(messages: Communication[]): Bundle {
     type: 'batch',
   };
 
+  const threads = new Set();
+
   for (const message of messages) {
     if (!message.partOf) {
       continue;
@@ -159,25 +169,28 @@ function buildSearchBundle(messages: Communication[]): Bundle {
     // Get the parent communication representing the thread
     const partOf = message.partOf;
 
-    const threadHeader = partOf.filter((resource) => resource.resource?.resourceType === 'Communication')[0];
+    const threadHeader = partOf.filter((reference) => parseReference(reference)?.[0] === 'Communication')[0];
 
     const threadHeaderReference = getReferenceString(threadHeader);
 
-    // Query for all of the messages in the thread
-    const searchQuery = `Communication?part-of=${threadHeaderReference}&_sort=-sent`;
+    if (!threads.has(threadHeaderReference)) {
+      threads.add(threadHeaderReference);
+      // Query for all of the messages in the thread
+      const searchQuery = `Communication?part-of=${threadHeaderReference}&_sort=-sent`;
 
-    // Add the search to a bundle to execute a batch request to get all threads with messages that haven't been responded to
-    const entry: BundleEntry = {
-      request: {
-        method: 'GET',
-        url: searchQuery,
-      },
-    };
+      // Add the search to a bundle to execute a batch request to get all threads with messages that haven't been responded to
+      const entry: BundleEntry = {
+        request: {
+          method: 'GET',
+          url: searchQuery,
+        },
+      };
 
-    if (requestBundle.entry) {
-      requestBundle.entry.push(entry);
-    } else {
-      requestBundle.entry = [entry];
+      if (requestBundle.entry) {
+        requestBundle.entry.push(entry);
+      } else {
+        requestBundle.entry = [entry];
+      }
     }
   }
 

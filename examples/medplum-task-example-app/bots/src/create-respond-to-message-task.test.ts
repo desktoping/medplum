@@ -2,6 +2,7 @@ import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitio
 import { readJson } from '@medplum/definitions';
 import { Bundle, Communication, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { assignToPractitionerBatch, assignToQueueBatch, threadsWithTasks } from './communication-data';
 import { handler } from './create-respond-to-message-task';
 
 describe('Create Respond to Message Task', async () => {
@@ -95,58 +96,34 @@ describe('Create Respond to Message Task', async () => {
     const medplum = new MockClient();
     console.log = vi.fn();
 
-    const now = new Date();
-    const earlier = new Date(now.getTime() - 60 * 60 * 1000);
+    await medplum.executeBatch(threadsWithTasks);
 
-    const sender = await medplum.createResource({
-      resourceType: 'Patient',
-      name: [
-        {
-          family: 'Smith',
-          given: ['John'],
-        },
-      ],
-    });
-
-    const threadHeader: Communication = await medplum.createResource({
-      resourceType: 'Communication',
-      sent: earlier.toISOString(),
-      status: 'in-progress',
-    });
-
-    await medplum.createResource({
-      resourceType: 'Communication',
-      sent: earlier.toISOString(),
-      partOf: [
-        {
-          reference: getReferenceString(threadHeader),
-        },
-      ],
-      sender: {
-        reference: getReferenceString(sender),
-      },
-    });
-
-    await medplum.createResource({
-      resourceType: 'Task',
-      focus: {
-        reference: getReferenceString(threadHeader),
-      },
-      status: 'in-progress',
-    });
-
-    const currentDate = new Date();
-    const thirtyMinutesAgo = new Date(currentDate.getTime() - 30 * 60 * 1000);
-    const timeStamp = thirtyMinutesAgo.toISOString();
-
-    const messages = await medplum.searchResources('Communication', {
-      sent: `lt${timeStamp}`,
-      'part-of:missing': false,
-      // 'part-of:Communication.status': 'in-progress',
-    });
-    console.log(messages[0].partOf);
-
-    await handler(medplum);
+    const result = await handler(medplum);
+    expect(result).toBe(true);
     expect(console.log).toBeCalledWith('Task already exists for this thread.');
+  });
+
+  test('Assign task to care coordinator queue', async () => {
+    const medplum = new MockClient();
+    console.log = vi.fn();
+
+    await medplum.executeBatch(assignToQueueBatch);
+
+    const result = await handler(medplum);
+    expect(result).toBe(true);
+    expect(console.log).toBeCalledWith('Task created');
+    expect(console.log).toBeCalledWith('Assigned to care coordinator queue');
+  });
+
+  test('Assign to practitioner who previously responded to thread', async () => {
+    const medplum = new MockClient();
+    console.log = vi.fn();
+
+    await medplum.executeBatch(assignToPractitionerBatch);
+
+    const result = await handler(medplum);
+    expect(result).toBe(true);
+    expect(console.log).toBeCalledWith('Task created');
+    expect(console.log).toBeCalledWith('Assigned to most recent responder');
   });
 });
