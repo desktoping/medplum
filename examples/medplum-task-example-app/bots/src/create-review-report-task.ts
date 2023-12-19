@@ -1,12 +1,8 @@
 import { BotEvent, getReferenceString, MedplumClient } from '@medplum/core';
 import { DiagnosticReport, Task } from '@medplum/fhirtypes';
 
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+export async function handler(medplum: MedplumClient, event: BotEvent<DiagnosticReport>): Promise<boolean> {
   const report = event.input as DiagnosticReport;
-
-  if (report.resourceType !== 'DiagnosticReport') {
-    throw new Error('Unexpected input. Expected DiagnosticReport');
-  }
 
   if (report.status !== 'preliminary') {
     throw new Error('Unexpected input. DiagnosticReport not in preliminary status');

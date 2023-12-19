@@ -323,6 +323,83 @@ export const threadsWithTasks: Bundle = {
       },
     },
     {
+      fullUrl: 'urn:uuid:b66f5c38-62dd-45de-9244-496c2e8fc9fe',
+      resource: {
+        resourceType: 'Communication',
+        status: 'in-progress',
+        subject: {
+          reference: 'Patient/8f0d3209-0ee0-487f-b186-4328a949190f',
+          display: 'Mr. Lucien408 Bosco882 PharmD',
+        },
+        topic: {
+          coding: [
+            {
+              code: 'Physical appointment',
+              display: 'Physical appointment',
+            },
+          ],
+        },
+      },
+      request: {
+        method: 'POST',
+        url: 'Communication',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'Communication',
+        status: 'in-progress',
+        payload: [
+          {
+            contentString: 'Do I have a physical scheduled for this week?',
+          },
+        ],
+        topic: {
+          text: 'Physical appointment',
+        },
+        partOf: [
+          {
+            reference: 'urn:uuid:b66f5c38-62dd-45de-9244-496c2e8fc9fe',
+          },
+        ],
+        sender: {
+          reference: 'Patient/8f0d3209-0ee0-487f-b186-4328a949190f',
+        },
+        sent: '2023-12-18T14:26:06.531Z',
+      },
+      request: {
+        method: 'POST',
+        url: 'Communication',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'Communication',
+        status: 'in-progress',
+        payload: [
+          {
+            contentString: 'No you do not!',
+          },
+        ],
+        topic: {
+          text: 'Physical appointment',
+        },
+        partOf: [
+          {
+            reference: 'urn:uuid:b66f5c38-62dd-45de-9244-496c2e8fc9fe',
+          },
+        ],
+        sender: {
+          reference: 'Practitioner/b95651dc-448b-42c3-b427-f26d082a574d',
+        },
+        sent: '2023-12-18T14:28:06.531Z',
+      },
+      request: {
+        method: 'POST',
+        url: 'Communication',
+      },
+    },
+    {
       resource: {
         resourceType: 'Task',
         status: 'in-progress',

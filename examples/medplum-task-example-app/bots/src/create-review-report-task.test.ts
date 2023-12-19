@@ -1,6 +1,6 @@
 import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, DiagnosticReport, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, DiagnosticReport, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { handler } from './create-review-report-task';
 
@@ -54,17 +54,6 @@ describe('Create Review Report Task', async () => {
     const contentType = 'appliation/fhir+json';
     await expect(handler(medplum, { input: diagnosticReport, contentType, secrets: {} })).rejects.toThrow(
       'Unexpected input. DiagnosticReport not in preliminary status'
-    );
-  });
-
-  test('Resource is not DiagnosticReport', async () => {
-    const medplum = new MockClient();
-
-    const patient: Patient = { resourceType: 'Patient' };
-
-    const contentType = 'appliation/fhir+json';
-    await expect(handler(medplum, { input: patient, contentType, secrets: {} })).rejects.toThrow(
-      'Unexpected input. Expected DiagnosticReport'
     );
   });
 });

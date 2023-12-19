@@ -9,14 +9,13 @@ import { Bundle, BundleEntry, Communication, Practitioner, Reference, ResourceTy
  * @param medplum - The medplum client
  * @returns Promise<any>
  */
-export async function handler(medplum: MedplumClient): Promise<any> {
+export async function handler(medplum: MedplumClient): Promise<boolean> {
   const currentDate = new Date();
-  const thirtyMinutesAgo = new Date(currentDate.getTime() - 30 * 60 * 1000);
-  const timeStamp = thirtyMinutesAgo.toISOString();
+  const thirtyMinutesAgo = new Date(currentDate.getTime() - 30 * 60 * 1000).toISOString();
 
-  // Get all messages that are part of an active thread and older than 30 minutes
+  // Get all messages that are part of an active thread and older than 30 minutes. For more information on how threads work see https://www.medplum.com/docs/communications/organizing-communications
   const messages: Communication[] = await medplum.searchResources('Communication', {
-    sent: `lt${timeStamp}`,
+    sent: `lt${thirtyMinutesAgo}`,
     'part-of:Communication.status': 'in-progress',
   });
 
@@ -29,103 +28,70 @@ export async function handler(medplum: MedplumClient): Promise<any> {
     return false;
   }
 
-  // Create and execute a batch search for all thread messages
-  const searchBundle = buildSearchBundle(patientMessages);
+  // Create and execute a batch search for fetch all thread messages
+  const threadMessages = await fetchMessageThreads(patientMessages, medplum);
 
-  const threadMessages = await medplum.executeBatch(searchBundle);
-
-  const threads: Record<string, Communication[]> = {};
-
-  // Go through each message and store with its thread
-  if (threadMessages.entry) {
-    organizeThreads(threadMessages.entry, threads);
+  if (!threadMessages.entry) {
+    return false;
   }
 
   // Go through each thread and create a task if necessary
-  for (const thread in threads) {
-    if (Object.hasOwn(threads, thread)) {
-      const messages = threads[thread];
+  for (const entry of threadMessages.entry) {
+    const threadBundle = entry.resource as Bundle;
+    const thread = threadBundle.entry;
+    const mostRecentMessage = thread?.[0].resource as Communication;
+    const threadHeader = mostRecentMessage.partOf?.[0].reference;
 
-      // If the most recent message is not by a patient, the thread has been responded to, and no task should be created
-      if (getMessageSenderType(messages[0]) !== 'Patient') {
-        continue;
-      }
+    // If the most recent message is not by a patient, the thread has been responded to, and no task should be created
+    if (getMessageSenderType(mostRecentMessage) !== 'Patient' || !threadHeader) {
+      continue;
+    }
 
-      // Check if there is already an existing task to respond to this message
-      if (await checkNoExistingTask(medplum, thread)) {
-        // Get the most recent employee to respond to this thread, if anyone has
-        const sender = getMostRecentResponder(messages) as Reference<Practitioner> | undefined;
+    // Check if there is already an existing task to respond to this message
+    if (await checkNoExistingTask(medplum, threadHeader)) {
+      // Get the most recent employee to respond to this thread, if anyone has
+      const sender = getMostRecentResponder(messages) as Reference<Practitioner> | undefined;
 
-        // Define a task to respond to the message
-        const task: Task = {
-          resourceType: 'Task',
-          focus: {
-            reference: thread,
-          },
-          code: {
-            text: 'Respond to Message',
-          },
-          status: 'ready',
-          intent: 'order',
-        };
+      // Define a task to respond to the message
+      const task: Task = {
+        resourceType: 'Task',
+        focus: {
+          reference: threadHeader,
+        },
+        code: {
+          text: 'Respond to Message',
+        },
+        status: 'ready',
+        intent: 'order',
+      };
 
-        // If somebody has already responded to this thread, assign the task to them, otherwise assign to care coordinator queue
-        if (sender) {
-          task.owner = sender;
-          console.log('Assigned to most recent responder');
-        } else {
-          task.performerType = [
-            {
-              coding: [
-                {
-                  system: 'http://snomed.info/sct',
-                  code: '768820003',
-                  display: 'Care Coordinator',
-                },
-              ],
-            },
-          ];
-          console.log('Assigned to care coordinator queue');
-        }
-
-        await medplum.createResource(task).then((result) => console.log(result));
-        console.log('Task created');
+      // If somebody has already responded to this thread, assign the task to them, otherwise assign to care coordinator queue
+      if (sender) {
+        task.owner = sender;
+        console.log('Assigned to most recent responder');
       } else {
-        console.log('Task already exists for this thread.');
+        task.performerType = [
+          {
+            coding: [
+              {
+                system: 'http://snomed.info/sct',
+                code: '768820003',
+                display: 'Care Coordinator',
+              },
+            ],
+          },
+        ];
+        console.log('Assigned to care coordinator queue');
       }
+
+      await medplum.createResource(task).then((result) => console.log(result));
+      console.log('Task created');
+    } else {
+      console.log('Task already exists for this thread.');
     }
   }
 
   return true;
-}
-
-// Organize a bundle of communication search responses into an object of the thread header and all messages
-function organizeThreads(messages: BundleEntry[], threads: Record<string, Communication[]>): void {
-  const communicationsBundle = messages[0].resource as Bundle;
-  const communications = communicationsBundle.entry;
-
-  if (communications) {
-    for (const entry of communications) {
-      const message = entry.resource;
-      if (message?.resourceType !== 'Communication' || !message.partOf) {
-        continue;
-      }
-
-      // Get the communication's thread header as a reference string
-      const partOf = message.partOf;
-
-      const threadHeader = partOf.filter((reference) => parseReference(reference)?.[0] === 'Communication')[0];
-
-      const threadReferenceString = getReferenceString(threadHeader);
-
-      // Group the communication with the rest of it's thread
-      if (!threads[threadReferenceString]) {
-        threads[threadReferenceString] = [];
-      }
-
-      threads[threadReferenceString].push(message);
-    }
-  }
 }
 
 // Gets the most recent practitioner to have responded to a thread
@@ -155,7 +121,7 @@ async function checkNoExistingTask(medplum: MedplumClient, threadHeader: string)
 }
 
 // Builds a search bundle to get all the messages from multiple threads in one batch request
-function buildSearchBundle(messages: Communication[]): Bundle {
+async function fetchMessageThreads(messages: Communication[], medplum: MedplumClient): Promise<Bundle> {
   const requestBundle: Bundle = {
     resourceType: 'Bundle',
     type: 'batch',
@@ -195,7 +161,8 @@ function buildSearchBundle(messages: Communication[]): Bundle {
     }
   }
 
-  return requestBundle;
+  const messageThreads = await medplum.executeBatch(requestBundle);
+  return messageThreads;
 }
 
 // Returns the ResourceType that sent a message
