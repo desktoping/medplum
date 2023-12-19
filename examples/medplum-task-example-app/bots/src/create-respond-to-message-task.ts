@@ -17,8 +17,7 @@ export async function handler(medplum: MedplumClient): Promise<any> {
   // Get all messages that are part of an active thread and older than 30 minutes
   const messages: Communication[] = await medplum.searchResources('Communication', {
     sent: `lt${timeStamp}`,
-    'part-of:missing': false,
-    // 'part-of:Communication.status': 'in-progress',
+    'part-of:Communication.status': 'in-progress',
   });
 
   // Filter for messages sent by patients
@@ -66,6 +65,8 @@ export async function handler(medplum: MedplumClient): Promise<any> {
           code: {
             text: 'Respond to Message',
           },
+          status: 'ready',
+          intent: 'order',
         };
 
         // If somebody has already responded to this thread, assign the task to them, otherwise assign to care coordinator queue
