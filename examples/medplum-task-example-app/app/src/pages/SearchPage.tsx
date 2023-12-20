@@ -2,7 +2,7 @@ import { formatSearchQuery, getReferenceString, parseSearchDefinition, SearchReq
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CreateTaskModal } from '../components/CreateTaskModal';
+import { CreateTaskModal } from '../components/task-actions/CreateTaskModal';
 
 export function SearchPage(): JSX.Element {
   const medplum = useMedplum();

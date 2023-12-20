@@ -1,21 +1,21 @@
 import { Button, Modal } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
+import { getQuestionnaireAnswers, MedplumClient, PatchOperation } from '@medplum/core';
+import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useState } from 'react';
-import { assignTaskQuestionnaire } from './questionnaires';
 
 interface AssignTaskProps {
   task: Task;
   onChange: (updatedTask: Task) => void;
+  medplum: MedplumClient;
 }
 
 type OwnerTypes = Task['owner'];
 
 export function AssignTask(props: AssignTaskProps): JSX.Element {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const medplum = useMedplum();
 
   const handleOpenClose = (): void => {
     setIsOpen(!isOpen);
@@ -27,37 +27,49 @@ export function AssignTask(props: AssignTaskProps): JSX.Element {
     medplum: MedplumClient,
     onChange: (task: Task) => void
   ): Promise<void> => {
-    if (!task) {
+    if (!task?.id) {
       return;
     }
 
-    // Create a resource for the updated task
-    const updatedTask = { ...task };
+    // Assign the task to the new owner. For more details on assigning task, see https://www.medplum.com/docs/careplans/tasks#task-assignment
+    const ops: PatchOperation[] = [
+      { op: 'test', path: '/meta/versionId', value: task.meta?.versionId },
+      { op: 'replace', path: '/owner', value: owner },
+    ];
 
-    // Update the owner, or who is responsible for the task. For more details see https://www.medplum.com/docs/careplans/tasks#task-assignment
-    updatedTask.owner = owner as OwnerTypes;
+    if (task.owner) {
+      ops.push({ op: 'replace', path: '/owner', value: owner });
+    } else {
+      ops.push({ op: 'add', path: '/owner', value: owner });
+    }
 
-    await medplum.updateResource(updatedTask).catch((error) =>
+    // Patch the task with the new owner
+    try {
+      const result = await medplum.patchResource('Task', task.id, ops);
       notifications.show({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Task assigned',
+      });
+      onChange(result);
+    } catch {
+      notifications.show({
+        color: 'red',
+        icon: <IconCircleOff />,
         title: 'Error',
-        message: `Error: ${error}`,
-      })
-    );
-    notifications.show({
-      title: 'Success',
-      message: 'Task assigned.',
-    });
-    onChange(updatedTask);
+        message: 'Another user modified the task.',
+      });
+    }
   };
 
   const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
     const owner = getQuestionnaireAnswers(formData)['owner'].valueReference;
 
     if (owner) {
-      handleAssignTask(owner, props.task, medplum, props.onChange);
+      handleAssignTask(owner, props.task, props.medplum, props.onChange);
     }
 
-    handleOpenClose();
+    setIsOpen(false);
   };
 
   return (
@@ -71,3 +83,16 @@ export function AssignTask(props: AssignTaskProps): JSX.Element {
     </div>
   );
 }
+
+const assignTaskQuestionnaire: Questionnaire = {
+  resourceType: 'Questionnaire',
+  id: 'assign-task',
+  title: 'Assign Owner to the Task',
+  item: [
+    {
+      linkId: 'owner',
+      text: 'Owner',
+      type: 'reference',
+    },
+  ],
+};

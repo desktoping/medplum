@@ -1,7 +1,7 @@
 import { Tabs, Title } from '@mantine/core';
-import { getDisplayString, getReferenceString } from '@medplum/core';
+import { convertContainedResourcesToBundle, getDisplayString, getReferenceString } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
-import { DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
+import { DefaultResourceTimeline, Document, ResourceTable, useMedplum, useResource } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ResourceHistoryTab } from '../components/ResourceHistoryTab';
@@ -14,21 +14,13 @@ import { ResourceHistoryTab } from '../components/ResourceHistoryTab';
 export function ResourcePage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams();
-  const [resource, setResource] = useState<Resource | undefined>(undefined);
+  const reference = { reference: resourceType + '/' + id };
+  const resource = useResource(reference);
   const tabs = ['Details', 'Timeline', 'History'];
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const tab = window.location.pathname.split('/').pop();
     return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
   });
-
-  useEffect(() => {
-    if (resourceType && id) {
-      medplum
-        .readResource(resourceType as ResourceType, id)
-        .then(setResource)
-        .catch(console.error);
-    }
-  }, [medplum, resourceType, id]);
 
   // Update the tab and navigate to that tab's URL
   const handleTabChange = (newTab: string): void => {

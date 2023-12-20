@@ -1,5 +1,5 @@
 import { Tabs } from '@mantine/core';
-import { formatSearchQuery, getReferenceString, Operator, SearchRequest } from '@medplum/core';
+import { getReferenceString, Operator, SearchRequest } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { Document, SearchControl, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -8,50 +8,42 @@ import { useNavigate } from 'react-router-dom';
 export function MyTasks(): JSX.Element {
   const profile = useMedplumProfile() as Resource;
   const navigate = useNavigate();
-  const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'Task',
-    fields: ['id', '_lastUpdated', 'owner', 'priority', 'for'],
-    sortRules: [{ code: '-priority-order,due-date' }],
-  });
+  const searchQuery = window.location.search;
   const tabs = ['Active', 'Completed'];
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const searchQuery = window.location.search;
     return handleInitialTab(searchQuery);
   });
 
-  const handleTabChange = (newTab: string): void => {
-    setCurrentTab(newTab);
-    const updatedSearch: SearchRequest = { resourceType: 'Task' };
-    updatedSearch.filters = [];
+  const filters =
+    currentTab === 'active'
+      ? [{ code: 'status:not', operator: Operator.EQUALS, value: 'completed' }]
+      : [{ code: 'status', operator: Operator.EQUALS, value: 'completed' }];
 
-    if (newTab === 'active') {
-      updatedSearch.filters.push({ code: 'status:not', operator: Operator.EQUALS, value: 'completed' });
-    }
-    if (newTab === 'completed') {
-      updatedSearch.filters.push({ code: 'status', operator: Operator.EQUALS, value: 'completed' });
-    }
+  filters.push({ code: 'owner', operator: Operator.EQUALS, value: `${getReferenceString(profile)}` });
 
-    navigate(formatSearchQuery(updatedSearch));
+  const search: SearchRequest = {
+    resourceType: 'Task',
+    fields: ['code', '_lastUpdated', 'owner', 'for', 'priority'],
+    sortRules: [{ code: '-priority-order,due-date' }],
+    filters,
   };
 
   useEffect(() => {
-    // Filter for tasks assigned to the current user
-    const filters = [{ code: 'owner', operator: Operator.EQUALS, value: `${getReferenceString(profile)}` }];
-
-    // Filter for active/complete tabs
-    if (currentTab === 'active') {
-      filters.push({ code: 'status:not', operator: Operator.EQUALS, value: 'completed' });
-    } else {
-      filters.push({ code: 'status', operator: Operator.EQUALS, value: 'completed' });
+    if (!searchQuery) {
+      navigate('/Task/mytasks?status:not=completed');
     }
+  });
 
-    const populatedSearch: SearchRequest = {
-      ...search,
-      filters,
-    };
+  const handleTabChange = (newTab: string): void => {
+    setCurrentTab(newTab);
 
-    setSearch(populatedSearch);
-  }, [currentTab]);
+    if (newTab === 'completed') {
+      navigate('/Task/mytasks?status=completed');
+    } else {
+      navigate('/Task/mytasks?status:not=completed');
+    }
+  };
 
   return (
     <Document>

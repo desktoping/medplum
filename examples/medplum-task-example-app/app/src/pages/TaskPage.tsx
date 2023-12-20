@@ -5,7 +5,6 @@ import { DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@m
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PatientChart } from '../components/PatientChart';
-
 import { TaskActions } from '../components/task-actions/TaskActions';
 import { NotesPage } from './NotesPage';
 
@@ -68,38 +67,70 @@ export function TaskPage(): JSX.Element {
   return (
     <Grid gutter="xs">
       <Grid.Col span={4}>
-        <Paper>
-          {patient ? <PatientChart patient={patient} /> : <Document>No patient linked to this task</Document>}
-        </Paper>
+        <PatientProfile patient={patient} />
       </Grid.Col>
       <Grid.Col span={5}>
-        <Paper p="md" key={task ? task.id : 'loading'}>
-          <Title>{task.code?.coding?.[0].display ? task.code?.coding[0].display : getDisplayString(task)}</Title>
-          <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
-            <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-              {tabs.map((tab) => (
-                <Tabs.Tab key={tab} value={tab.toLowerCase()}>
-                  {tab}
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-            <Tabs.Panel value="details">
-              <ResourceTable key={`Task/${id}`} value={task} ignoreMissingValues={true} />
-            </Tabs.Panel>
-            <Tabs.Panel value="timeline">
-              <DefaultResourceTimeline resource={task} />
-            </Tabs.Panel>
-            <Tabs.Panel value="notes">
-              <NotesPage task={task} />
-            </Tabs.Panel>
-          </Tabs>
-        </Paper>
+        <TaskDetails task={task} tabs={tabs} currentTab={currentTab} handleTabChange={handleTabChange} />
       </Grid.Col>
       <Grid.Col span={3}>
-        <Paper p="md">
-          <TaskActions task={task} onChange={onTaskChange} />
-        </Paper>
+        <Actions task={task} onTaskChange={onTaskChange} />
       </Grid.Col>
     </Grid>
+  );
+}
+
+interface PatientProfileProps {
+  patient?: Patient;
+}
+
+function PatientProfile({ patient }: PatientProfileProps): JSX.Element {
+  return (
+    <Paper>{patient ? <PatientChart patient={patient} /> : <Document>No patient linked to this task</Document>}</Paper>
+  );
+}
+
+interface TaskDetailsProps {
+  task: Task;
+  tabs: string[];
+  currentTab: string;
+  handleTabChange: (newTab: string) => void;
+}
+
+function TaskDetails({ task, tabs, currentTab, handleTabChange }: TaskDetailsProps): JSX.Element {
+  return (
+    <Paper p="md" key={task ? task.id : 'loading'}>
+      <Title>{task.code?.coding?.[0].display ? task.code?.coding[0].display : getDisplayString(task)}</Title>
+      <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
+        <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+          {tabs.map((tab) => (
+            <Tabs.Tab key={tab} value={tab.toLowerCase()}>
+              {tab}
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+        <Tabs.Panel value="details">
+          <ResourceTable key={`Task/${task.id}`} value={task} ignoreMissingValues={true} />
+        </Tabs.Panel>
+        <Tabs.Panel value="timeline">
+          <DefaultResourceTimeline resource={task} />
+        </Tabs.Panel>
+        <Tabs.Panel value="notes">
+          <NotesPage task={task} />
+        </Tabs.Panel>
+      </Tabs>
+    </Paper>
+  );
+}
+
+interface ActionsProps {
+  task: Task;
+  onTaskChange: (updatedTask: Task) => void;
+}
+
+function Actions({ task, onTaskChange }: ActionsProps): JSX.Element {
+  return (
+    <Paper p="md">
+      <TaskActions task={task} onChange={onTaskChange} />
+    </Paper>
   );
 }

@@ -13,6 +13,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Diagnostic
     code: {
       text: 'Review Diagnostic Report',
     },
+    status: 'ready',
+    intent: 'order',
     focus: {
       // The focus of the resource will be the DiagnosticReport
       reference: getReferenceString(report),

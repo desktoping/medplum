@@ -50,7 +50,7 @@ export function TaskByRoleQueue(): JSX.Element {
 
     // Add filters for active and complete tabs
 
-    const fields = ['id', 'priority', 'description', 'for'];
+    const fields = ['code', 'priority', 'description', 'for'];
     const sortRules = [{ code: '-priority-order,due-date' }];
 
     const populatedSearch = {

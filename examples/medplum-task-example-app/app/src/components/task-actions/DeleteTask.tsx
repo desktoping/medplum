@@ -1,9 +1,9 @@
 import { Alert, Button, Group, Modal } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { MedplumClient } from '@medplum/core';
+import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconAlertCircle } from '@tabler/icons-react';
+import { IconAlertCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useState } from 'react';
 import { NavigateFunction, useNavigate } from 'react-router-dom';
 
@@ -25,21 +25,25 @@ export function DeleteTask(props: DeleteTaskProps): JSX.Element {
     // Get the task id
     const taskId = task.id;
 
-    if (taskId) {
-      // Delete the task and navigate to the main tasks queue
-      await medplum.deleteResource('Task', taskId).catch((error) =>
-        notifications.show({
-          title: 'Error',
-          message: `Error: ${error}`,
-        })
-      );
-      navigate('/Task');
+    if (!taskId) {
+      return;
+    }
+    try {
+      // Delete the task and navigate back to the main page
+      await medplum.deleteResource('Task', taskId);
       notifications.show({
-        title: 'Deleted',
-        message: 'This task has been deleted.',
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Task deleted',
       });
-    } else {
-      console.error('Task could not be deleted');
+      navigate('/Task');
+    } catch (error) {
+      notifications.show({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(error),
+      });
     }
   };
 

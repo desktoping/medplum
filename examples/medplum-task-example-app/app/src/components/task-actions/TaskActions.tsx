@@ -1,14 +1,15 @@
-import { Button, Stack, Title } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { CodeableConcept, Task } from '@medplum/fhirtypes';
+import { Stack, Title } from '@mantine/core';
+import { Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum, useResource } from '@medplum/react';
-import { AddComment } from './AddComment';
+import { AddNote } from './AddNote';
 import { AddDueDate } from './AddDueDate';
-import { UpdateStatus } from './UpdateStatus';
+import { UpdateBusinessStatus } from './UpdateBusinessStatus';
 import { AssignTask } from './AssignTask';
 import { AssignRole } from './AssignRole';
 import { ClaimTask } from './ClaimTask';
 import { DeleteTask } from './DeleteTask';
+import { PauseResumeTask } from './PauseResumeTask';
+import { CompleteTask } from './CompleteTask';
 
 interface TaskActionsProps {
   task: Task;
@@ -19,48 +20,6 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
   const medplum = useMedplum();
   const task = useResource(props.task);
 
-  const handleChangeTaskStatus = async (): Promise<void> => {
-    if (task) {
-      const updatedTask: Task = { ...task };
-      if (updatedTask.status !== 'on-hold') {
-        updatedTask.status = 'on-hold';
-        await medplum.updateResource(updatedTask);
-        notifications.show({
-          title: 'Success',
-          message: 'Task paused',
-        });
-        props.onChange(updatedTask);
-      } else {
-        updatedTask.status = 'in-progress';
-        await medplum.updateResource(updatedTask);
-        notifications.show({
-          title: 'Success',
-          message: 'Task resumed',
-        });
-      }
-    } else {
-      notifications.show({
-        title: 'Error',
-        message: 'No valid task to update.',
-      });
-      throw new Error('No valid task to update');
-    }
-  };
-
-  const handleCompleteTask = async (): Promise<void> => {
-    if (task) {
-      const updatedTask: Task = { ...task };
-      updatedTask.status = 'completed';
-
-      await medplum.updateResource(updatedTask);
-      notifications.show({
-        title: 'Success',
-        message: 'Task completed!',
-      });
-      props.onChange(updatedTask);
-    }
-  };
-
   if (!task) {
     return <Loading />;
   }
@@ -69,18 +28,14 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
     <Stack>
       <Title>Task Actions</Title>
       <Stack>
-        <AddComment task={task} onChange={props.onChange} />
-        <AddDueDate task={task} onChange={props.onChange} />
-        <UpdateStatus task={task} onChange={props.onChange} />
-        <AssignTask task={task} onChange={props.onChange} />
-        <AssignRole task={task} onChange={props.onChange} />
-        {!task.owner ? <ClaimTask task={task} onChange={props.onChange} /> : null}
-        {task.status === 'on-hold' ? (
-          <Button onClick={handleChangeTaskStatus}>Resume Task</Button>
-        ) : (
-          <Button onClick={handleChangeTaskStatus}>Pause Task</Button>
-        )}
-        {task.status === 'completed' ? null : <Button onClick={handleCompleteTask}>Complete Task</Button>}
+        <AddNote task={task} onChange={props.onChange} medplum={medplum} />
+        <AddDueDate task={task} onChange={props.onChange} medplum={medplum} />
+        <UpdateBusinessStatus task={task} onChange={props.onChange} medplum={medplum} />
+        <AssignTask task={task} onChange={props.onChange} medplum={medplum} />
+        <AssignRole task={task} onChange={props.onChange} medplum={medplum} />
+        {!task.owner ? <ClaimTask task={task} onChange={props.onChange} medplum={medplum} /> : null}
+        <PauseResumeTask task={task} onChange={props.onChange} medplum={medplum} />
+        <CompleteTask task={task} onChange={props.onChange} medplum={medplum} />
         <DeleteTask task={task} onChange={props.onChange} />
       </Stack>
     </Stack>

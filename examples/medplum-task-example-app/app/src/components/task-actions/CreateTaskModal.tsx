@@ -1,4 +1,5 @@
 import { Modal, Text } from '@mantine/core';
+import { getReferenceString } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum } from '@medplum/react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -21,7 +22,7 @@ export function CreateTaskModal(props: CreateTaskModalProps): JSX.Element {
   const handleSubmit = (newResource: Resource): void => {
     medplum
       .createResource(newResource)
-      .then((result) => navigate(`/${resourceType}/${result.id}`))
+      .then((result) => navigate(`/${getReferenceString(result)}`))
       .catch((error) => console.error(error));
   };
 

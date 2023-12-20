@@ -1,5 +1,5 @@
-<h1 align="center">Medplum Hello World</h1>
-<p align="center">A starter application for using the Medplum platform.</p>
+<h1 align="center">Medplum Task Example App</h1>
+<p align="center">A starter application for using the `Task` resource and related workflows with the Medplum platform.</p>
 <p align="center">
 <a href="https://github.com/medplum/medplum-hello-world/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/license-Apache-blue.svg" />
@@ -19,7 +19,13 @@ This example app demonstrates the following:
 
 If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
 
-[Fork](https://github.com/medplum/medplum-hello-world/fork) and clone the repo.
+[Fork](https://github.com/medplum/medplum-task-example-app/fork) and clone the repo.
+
+To run the app, move into the `app` directory.
+
+```bash
+cd app
+```
 
 Next, install the dependencies
 

@@ -1,11 +1,10 @@
-import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconGridDots, IconLayoutList, IconListCheck } from '@tabler/icons-react';
-import { Suspense } from 'react';
+import { AppShell, ErrorBoundary, Loading, Logo, NavbarLink, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconGridDots, IconLayoutList, IconListCheck, IconUser } from '@tabler/icons-react';
+import { Suspense, useEffect, useState } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { Timeline } from './components/Timeline';
 import { AllTasks } from './pages/AllTasks';
-import { CreateResourcePage } from './pages/CreateResourcePage';
-import { DetailsPage } from './pages/DetailsPage';
+import { ResourceDetailsPage } from './pages/ResourceDetailsPage';
 import { LandingPage } from './pages/LandingPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
@@ -13,11 +12,58 @@ import { SignInPage } from './pages/SignInPage';
 import { TaskByRoleQueue } from './pages/TaskByRoleQueue';
 import { TaskPage } from './pages/TaskPage';
 import { MyTasks } from './pages/MyTasks';
+import { PractitionerRole } from '@medplum/fhirtypes';
+import { getDisplayString, ResourceArray } from '@medplum/core';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const location = useLocation();
   const profile = useMedplumProfile();
+  const [roles, setRoles] = useState<PractitionerRole[]>();
+  const [userLinks, setUserLinks] = useState<NavbarLink[]>([
+    { icon: <IconLayoutList />, label: 'My Tasks', href: '/Task/mytasks' },
+    { icon: <IconListCheck />, label: 'Tasks For My Role', href: '/Task/queue' },
+    { icon: <IconGridDots />, label: 'All Tasks', href: '/Task' },
+  ]);
+
+  useEffect(() => {
+    const getUserPractitionerRoles = async (): Promise<void> => {
+      if (profile) {
+        const results: ResourceArray<PractitionerRole> = await medplum.searchResources('PractitionerRole', {
+          practitioner: `Practitioner/${profile.id}`,
+        });
+
+        const practitionerRoles: PractitionerRole[] = results.filter(
+          (result) => result.resourceType === 'PractitionerRole'
+        );
+
+        setRoles(practitionerRoles);
+      }
+    };
+
+    const fetchRoles = async () => {
+      await getUserPractitionerRoles();
+    };
+
+    fetchRoles();
+  }, [profile]);
+
+  useEffect(() => {
+    const getLinks = (): void => {
+      const updatedLinks = [...userLinks];
+
+      if (roles) {
+        for (const role of roles) {
+          const roleDisplay = getPractitionerRoleDisplay(role);
+          updatedLinks.push({ icon: <IconUser />, label: `${roleDisplay} Tasks`, href: `/Task/queue/${roleDisplay}` });
+        }
+      }
+
+      setUserLinks(updatedLinks);
+    };
+
+    getLinks();
+  }, [roles]);
 
   if (medplum.isLoading()) {
     return null;
@@ -29,11 +75,7 @@ export function App(): JSX.Element | null {
       menus={[
         {
           title: 'My Links',
-          links: [
-            { icon: <IconLayoutList />, label: 'My Tasks', href: '/Task/mytasks' },
-            { icon: <IconListCheck />, label: 'Tasks For My Role', href: '/Task/queue' },
-            { icon: <IconGridDots />, label: 'All Tasks', href: '/Task' },
-          ],
+          links: userLinks,
         },
       ]}
     >
@@ -43,24 +85,33 @@ export function App(): JSX.Element | null {
             <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
-            <Route path="/:resourceType/new" element={<CreateResourcePage />} />
             <Route path="/:resourceType/:id" element={<ResourcePage />} />
             <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
-            <Route path="/Task/new" element={<CreateResourcePage />} />
             <Route path="/Task/:id" element={<TaskPage />}>
               <Route index element={<TaskPage />} />
-              <Route path="details" element={<DetailsPage />} />
+              <Route path="details" element={<ResourceDetailsPage />} />
               <Route path="timeline" element={<Timeline />} />
               <Route path="notes" element={<TaskPage />} />
             </Route>
             <Route path="/Task" element={<AllTasks />} />
             <Route path="/Task/mytasks" element={<MyTasks />} />
-            <Route path="/Task/mytasks/active" element={<MyTasks />} />
-            <Route path="/Task/mytasks/completed" element={<MyTasks />} />
             <Route path="/Task/queue" element={<TaskByRoleQueue />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>
     </AppShell>
   );
+}
+
+function getPractitionerRoleDisplay(practitionerRole: PractitionerRole): string {
+  let display;
+  if (practitionerRole.specialty?.[0].coding?.[0].display) {
+    display = practitionerRole.specialty[0].coding?.[0].display;
+  } else if (practitionerRole.code?.[0].coding?.[0].display) {
+    display = practitionerRole.code[0].coding?.[0].display;
+  } else {
+    display = getDisplayString(practitionerRole);
+  }
+
+  return display;
 }

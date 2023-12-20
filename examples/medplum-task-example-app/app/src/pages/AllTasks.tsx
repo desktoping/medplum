@@ -1,17 +1,13 @@
 import { Tabs } from '@mantine/core';
-import { formatSearchQuery, getReferenceString, Operator, SearchRequest } from '@medplum/core';
+import { getReferenceString, Operator, SearchRequest } from '@medplum/core';
 import { Document, SearchControl } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreateTaskModal } from '../components/CreateTaskModal';
+import { CreateTaskModal } from '../components/task-actions/CreateTaskModal';
 
 export function AllTasks(): JSX.Element {
   const navigate = useNavigate();
-  const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'Task',
-    fields: ['id', 'priority', 'description', 'owner', 'for'],
-    sortRules: [{ code: '-priority-order,due-date' }],
-  });
+  const searchQuery = window.location.search;
   const tabs = ['Active', 'Completed'];
   const [currentTab, setCurrentTab] = useState(() => {
     const searchQuery = window.location.search;
@@ -19,36 +15,30 @@ export function AllTasks(): JSX.Element {
   });
   const [isNewOpen, setIsNewOpen] = useState<boolean>(false);
 
-  const handleTabChange = (newTab: string): void => {
-    setCurrentTab(newTab);
-    const updatedSearch: SearchRequest = { resourceType: 'Task' };
-    updatedSearch.filters = [];
-
-    if (newTab === 'active') {
-      updatedSearch.filters.push({ code: 'status:not', operator: Operator.EQUALS, value: 'completed' });
-    }
-    if (newTab === 'completed') {
-      updatedSearch.filters.push({ code: 'status', operator: Operator.EQUALS, value: 'completed' });
-    }
-
-    navigate(formatSearchQuery(updatedSearch));
+  const search: SearchRequest = {
+    resourceType: 'Task',
+    fields: ['code', 'priority', 'description', 'owner', 'for'],
+    sortRules: [{ code: '-priority-order,due-date' }],
+    filters:
+      currentTab === 'active'
+        ? [{ code: 'status:not', operator: Operator.EQUALS, value: 'completed' }]
+        : [{ code: 'status', operator: Operator.EQUALS, value: 'completed' }],
   };
 
   useEffect(() => {
-    const filters = [];
-    if (currentTab === 'active') {
-      filters.push({ code: 'status:not', operator: Operator.EQUALS, value: 'completed' });
-    } else {
-      filters.push({ code: 'status', operator: Operator.EQUALS, value: 'completed' });
+    if (!searchQuery) {
+      navigate('/Task?status:not=completed');
     }
+  }, []);
 
-    const populatedSearch = {
-      ...search,
-      filters,
-    };
-
-    setSearch(populatedSearch);
-  }, [currentTab]);
+  const handleTabChange = (newTab: string): void => {
+    setCurrentTab(newTab);
+    if (newTab === 'completed') {
+      navigate('/Task?status=completed');
+    } else {
+      navigate('/Task?status:not=completed');
+    }
+  };
 
   return (
     <Document>
