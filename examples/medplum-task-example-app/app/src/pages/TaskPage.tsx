@@ -4,7 +4,7 @@ import { Patient, Task } from '@medplum/fhirtypes';
 import { DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PatientChart } from '../components/PatientChart';
+import { PatientChart } from '../components/patient-chart/PatientChart';
 import { TaskActions } from '../components/task-actions/TaskActions';
 import { NotesPage } from './NotesPage';
 

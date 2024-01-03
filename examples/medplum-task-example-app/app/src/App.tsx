@@ -14,6 +14,7 @@ import { TaskPage } from './pages/TaskPage';
 import { MyTasks } from './pages/MyTasks';
 import { PractitionerRole } from '@medplum/fhirtypes';
 import { getDisplayString, ResourceArray } from '@medplum/core';
+import { RoleQueue } from './pages/RoleQueue';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -96,6 +97,7 @@ export function App(): JSX.Element | null {
             <Route path="/Task" element={<AllTasks />} />
             <Route path="/Task/mytasks" element={<MyTasks />} />
             <Route path="/Task/queue" element={<TaskByRoleQueue />} />
+            <Route path="/Task/queue/:roleDisplay" element={<RoleQueue />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>
