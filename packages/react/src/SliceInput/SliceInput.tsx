@@ -63,7 +63,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                 <Stack>
                   {!isEmpty(slice.elements) ? (
                     <ElementsInput
-                      type={slice.type[0].code}
+                      type={slice.typeSchema?.type ?? slice.type[0].code}
                       elements={slice.elements}
                       defaultValue={value}
                       outcome={props.outcome}
@@ -73,6 +73,7 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
                         setValuesWrapper(newValues);
                       }}
                       testId={props.testId && `${props.testId}-elements-${valueIndex}`}
+                      typeSchema={slice.typeSchema}
                     />
                   ) : (
                     <ElementDefinitionTypeInput
