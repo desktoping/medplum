@@ -1,7 +1,7 @@
 import { Button, Modal } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { getQuestionnaireAnswers, MedplumClient, PatchOperation } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
+import { getQuestionnaireAnswers, MedplumClient, PatchOperation, normalizeErrorString } from '@medplum/core';
+import { CodeableConcept, Coding, Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -20,7 +20,7 @@ export function AssignRole(props: AssignTaskProps): JSX.Element {
   };
 
   const handleAssignToRole = async (
-    role: Reference,
+    role: Coding,
     task: Task,
     medplum: MedplumClient,
     onChange: (task: Task) => void
@@ -29,10 +29,17 @@ export function AssignRole(props: AssignTaskProps): JSX.Element {
       return;
     }
 
+    const updatedRole: CodeableConcept = {coding: [role]};
+
     const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
     const op: PatchOperation['op'] = task.performerType ? 'replace' : 'add';
 
-    ops.push({ op, path: '/performerType', value: role });
+    const updatedRoles = task.performerType ? [...task.performerType] : [];
+
+    updatedRoles.push(updatedRole);
+
+    ops.push({ op, path: '/performerType', value: updatedRoles });
+    console.log(ops);
 
     try {
       const result = await medplum.patchResource('Task', task.id, ops);
@@ -42,19 +49,19 @@ export function AssignRole(props: AssignTaskProps): JSX.Element {
         message: 'Task assigned',
       });
       onChange(result);
-    } catch {
+    } catch (error) {
       notifications.show({
         color: 'red',
         icon: <IconCircleOff />,
         title: 'Error',
-        message: 'Another user modified the task.',
+        message: normalizeErrorString(error)
       });
     }
   };
 
   const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
-    const role = getQuestionnaireAnswers(formData)['assign-role'].valueReference;
-
+    const role = getQuestionnaireAnswers(formData)['assign-role'].valueCoding;
+    
     if (role) {
       handleAssignToRole(role, props.task, medplum, props.onChange).catch((error) => console.error(error));
     }
@@ -83,7 +90,7 @@ const assignRoleQuestionnaire: Questionnaire = {
       linkId: 'assign-role',
       text: 'Select Role',
       type: 'choice',
-      answerValueSet: 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1099.30',
+      answerValueSet: 'http://hl7.org/fhir/ValueSet/practitioner-role',
     },
   ],
 };

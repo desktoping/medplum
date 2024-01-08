@@ -1,8 +1,8 @@
 import { Grid, Paper, Tabs, Title } from '@mantine/core';
 import { getDisplayString, resolveId } from '@medplum/core';
 import { Patient, Task } from '@medplum/fhirtypes';
-import { DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { DefaultResourceTimeline, Document, ResourceTable, useMedplum, useResource } from '@medplum/react';
+import { memo, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PatientChart } from '../components/patient-chart/PatientChart';
 import { TaskActions } from '../components/actions/TaskActions';
@@ -12,7 +12,10 @@ export function TaskPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const { id } = useParams() as { id: string };
-  const [task, setTask] = useState<Task | undefined>(undefined);
+  const task = useResource<Task>({
+    reference: `Task/${id}`
+  });
+  // const [task, setTask] = useState<Task | undefined>(undefined);
   const tabs = ['Details', 'Timeline', 'Notes'];
   const [patient, setPatient] = useState<Patient | undefined>();
 
@@ -22,19 +25,26 @@ export function TaskPage(): JSX.Element {
     return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
   });
 
-  useEffect(() => {
-    // Fetch the task that is specified in the URL
-    const fetchTask = async (): Promise<void> => {
-      try {
-        const taskData = await medplum.readResource('Task', id);
-        setTask(taskData);
-      } catch (error) {
-        console.error(error);
-      }
-    };
+  // useEffect(() => {
+  //   // Fetch the task that is specified in the URL
+  //   const fetchTask = async (): Promise<void> => {
+  //     console.log('fetching task')
+  //     try {
+  //       const taskData = await medplum.readResource('Task', id);
+  //       setTask(taskData);
+  //     } catch (error) {
+  //       console.error(error);
+  //     }
+  //   };
 
-    // Fetch the patient that this task if for. See https://www.medplum.com/docs/careplans/tasks#task-assignment for more details
+  //   // Fetch the patient that this task if for. See https://www.medplum.com/docs/careplans/tasks#task-assignment for more details
+    
+  //   fetchTask().catch((error) => console.error(error));
+  // }, [medplum, id]);
+
+  useEffect(() => {
     const fetchLinkedPatient = async (): Promise<void> => {
+      console.log('fetching patient');
       if (task?.for) {
         const patientId = resolveId(task.for);
         try {
@@ -45,10 +55,9 @@ export function TaskPage(): JSX.Element {
         }
       }
     };
-
-    fetchTask().catch((error) => console.error(error));
-    fetchLinkedPatient().catch((error) => console.error(error));
-  }, [medplum, id, task]);
+    
+    fetchLinkedPatient().catch((err) => console.error(err));
+  }, [medplum, task]);
 
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string): void => {
@@ -56,9 +65,9 @@ export function TaskPage(): JSX.Element {
     navigate(`/Task/${id}/${newTab}`);
   };
 
-  const onTaskChange = (updatedTask: Task): void => {
-    setTask(updatedTask);
-  };
+  // const onTaskChange = (updatedTask: Task): void => {
+  //   setTask(updatedTask);
+  // };
 
   if (!task) {
     return <Document>No Task found</Document>;
@@ -73,7 +82,7 @@ export function TaskPage(): JSX.Element {
         <TaskDetails task={task} tabs={tabs} currentTab={currentTab} handleTabChange={handleTabChange} />
       </Grid.Col>
       <Grid.Col span={3}>
-        <Actions task={task} onTaskChange={onTaskChange} />
+        {/* <Actions task={task} onTaskChange={onTaskChange} /> */}
       </Grid.Col>
     </Grid>
   );
@@ -83,11 +92,11 @@ interface PatientProfileProps {
   patient?: Patient;
 }
 
-function PatientProfile({ patient }: PatientProfileProps): JSX.Element {
+const PatientProfile = memo(function PatientProfile({ patient }: PatientProfileProps): JSX.Element {
   return (
     <Paper>{patient ? <PatientChart patient={patient} /> : <Document>No patient linked to this task</Document>}</Paper>
   );
-}
+})
 
 interface TaskDetailsProps {
   task: Task;

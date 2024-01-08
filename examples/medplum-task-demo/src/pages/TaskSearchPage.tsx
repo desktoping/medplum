@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { CreateTaskModal } from '../components/actions/CreateTaskModal';
 import { getPopulatedSearch } from './utils';
 
-export function SearchPage(): JSX.Element {
+export function TaskSearchPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
@@ -125,10 +125,6 @@ function handleInitialTab(search: SearchRequest): string {
 
 function handleShowTabs(search: SearchRequest): boolean {
   console.log(search);
-  if (search.resourceType !== 'Task') {
-    return false;
-  }
-
   if (!search.filters) {
     return true;
   }
