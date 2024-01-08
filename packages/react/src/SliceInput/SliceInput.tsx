@@ -8,12 +8,7 @@ import { killEvent } from '../utils/dom';
 import { SupportedSliceDefinition } from './SliceInput.utils';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
-import {
-  ElementsContext,
-  ElementsContextType,
-  buildElementsContext,
-  mergeElementsForContext,
-} from '../ElementsInput/ElementsInput.utils';
+import { ElementsContext, ElementsContextType, buildElementsContext } from '../ElementsInput/ElementsInput.utils';
 
 export type SliceInputProps = Readonly<{
   path: string;
@@ -51,17 +46,18 @@ export function SliceInput(props: SliceInputProps): JSX.Element | null {
   const sliceType = slice.typeSchema?.type ?? slice.type[0].code;
 
   const parentElementsContextValue = useContext(ElementsContext);
-  const mergedElements: ElementsContextType['elements'] = useMemo(() => {
-    const result = mergeElementsForContext(props.path, slice.elements, parentElementsContextValue);
-    return result;
-  }, [props.path, slice.elements, parentElementsContextValue]);
 
   const contextValue = useMemo(() => {
-    if (!isPopulated(slice.elements)) {
-      return undefined;
+    if (isPopulated(slice.elements)) {
+      return buildElementsContext({
+        parentContext: parentElementsContextValue,
+        elements: slice.elements,
+        parentPath: props.path,
+        parentType: sliceType,
+      });
     }
-    return buildElementsContext({ elements: mergedElements, parentPath: props.path, parentType: sliceType });
-  }, [mergedElements, props.path, slice.elements, sliceType]);
+    return undefined;
+  }, [parentElementsContextValue, props.path, slice.elements, sliceType]);
 
   function setValuesWrapper(newValues: any[]): void {
     setValues(newValues);
