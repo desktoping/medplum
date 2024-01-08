@@ -69,6 +69,3 @@ medplum-server.tar.gz
 
 # All certificate files
 *.p12
-
-
-examples/medplum-demo-bots/src/health-gorilla/scripts/sandbox.secrets.json
