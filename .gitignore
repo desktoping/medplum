@@ -7,7 +7,7 @@ binary/
 node_modules/
 
 # Dotenv
-.env*
+.env
 
 .failed
 prettier-fmt.err
@@ -71,3 +71,4 @@ medplum-server.tar.gz
 *.p12
 
 
+examples/medplum-demo-bots/src/health-gorilla/scripts/sandbox.secrets.json
