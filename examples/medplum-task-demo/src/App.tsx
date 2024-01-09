@@ -10,8 +10,16 @@ import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { TaskPage } from './pages/TaskPage';
 import { Practitioner, PractitionerRole } from '@medplum/fhirtypes';
-import { Filter, formatSearchQuery, getDisplayString, getReferenceString, Operator, ResourceArray, SearchRequest } from '@medplum/core';
-import { TaskSearchPage } from './pages/TaskSearchPage';
+import {
+  Filter,
+  formatSearchQuery,
+  getDisplayString,
+  getReferenceString,
+  Operator,
+  ResourceArray,
+  SearchRequest,
+} from '@medplum/core';
+import { UploadDataPage } from './pages/UploadDataPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -41,21 +49,25 @@ export function App(): JSX.Element | null {
 
     // Create a link to the tasks assigned to the current user
     const getMyTasksLink = async (): Promise<void> => {
+      if (!profile) {
+        return;
+      }
+
       const userReference = getReferenceString(profile);
       const updatedLinks = [...userLinks];
 
       const myTasksSearch: SearchRequest = {
         resourceType: 'Task',
         fields: ['code', '_lastUpdated', 'owner', 'for', 'priority'],
-        sortRules: [{code: '-priority-order,due-date'}],
+        sortRules: [{ code: '-priority-order,due-date' }],
         filters: [
-          {code: 'owner', operator: Operator.EQUALS, value: userReference},
-          {code: 'status:not', operator: Operator.EQUALS, value: 'completed'}
-        ]
+          { code: 'owner', operator: Operator.EQUALS, value: userReference },
+          { code: 'status:not', operator: Operator.EQUALS, value: 'completed' },
+        ],
       };
 
       const myTasksQuery = formatSearchQuery(myTasksSearch);
-      const newLink = {icon: <IconUser />, label: 'My Tasks', href: `/Task${myTasksQuery}`};
+      const newLink = { icon: <IconUser />, label: 'My Tasks', href: `/Task${myTasksQuery}` };
       const label = newLink.label;
 
       for (const link of updatedLinks) {
@@ -66,7 +78,7 @@ export function App(): JSX.Element | null {
       updatedLinks.push(newLink);
 
       setUserLinks(updatedLinks);
-    }
+    };
 
     const fetchRoles = async (): Promise<void> => {
       await getUserPractitionerRoles();
@@ -79,7 +91,7 @@ export function App(): JSX.Element | null {
   // Update links on the sidebar to include links to queues assigned to the current user's role. For more details, see https://www.medplum.com/docs/careplans/tasks#task-assignment
   useEffect(() => {
     const getLinks = (): void => {
-        const updatedLinks = [...userLinks];
+      const updatedLinks = [...userLinks];
 
       if (roles) {
         for (const role of roles) {
@@ -133,8 +145,8 @@ export function App(): JSX.Element | null {
         {
           title: 'Upload Data',
           links: [
-            { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: '' },
-            { icon: <IconFileImport />, label: 'Upload Example Data', href: '' },
+            { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: '/upload/core' },
+            { icon: <IconFileImport />, label: 'Upload Example Data', href: '/upload/example' },
           ],
         },
       ]}
@@ -155,7 +167,8 @@ export function App(): JSX.Element | null {
               <Route path="timeline" element={<Timeline />} />
               <Route path="notes" element={<TaskPage />} />
             </Route>
-            <Route path="/Task" element={<TaskSearchPage />} />
+            <Route path="/Task" element={<SearchPage />} />
+            <Route path="/upload/:dataType" element={<UploadDataPage />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>

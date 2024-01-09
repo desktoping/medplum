@@ -17,7 +17,7 @@ interface PatientChartProps {
 
 export function PatientChart(props: PatientChartProps): JSX.Element | null {
   const { id } = useParams();
-  const patientId = props.patient.id;
+  const patientId = props?.patient?.id;
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient>();
   const [allergies, setAllergies] = useState<AllergyIntolerance[]>();

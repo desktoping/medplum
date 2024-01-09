@@ -2,7 +2,7 @@ import { Grid, Paper, Tabs, Title } from '@mantine/core';
 import { getDisplayString, resolveId } from '@medplum/core';
 import { Patient, Task } from '@medplum/fhirtypes';
 import { DefaultResourceTimeline, Document, ResourceTable, useMedplum, useResource } from '@medplum/react';
-import { memo, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PatientChart } from '../components/patient-chart/PatientChart';
 import { TaskActions } from '../components/actions/TaskActions';
@@ -13,7 +13,7 @@ export function TaskPage(): JSX.Element {
   const navigate = useNavigate();
   const { id } = useParams() as { id: string };
   const task = useResource<Task>({
-    reference: `Task/${id}`
+    reference: `Task/${id}`,
   });
   // const [task, setTask] = useState<Task | undefined>(undefined);
   const tabs = ['Details', 'Timeline', 'Notes'];
@@ -38,13 +38,12 @@ export function TaskPage(): JSX.Element {
   //   };
 
   //   // Fetch the patient that this task if for. See https://www.medplum.com/docs/careplans/tasks#task-assignment for more details
-    
+
   //   fetchTask().catch((error) => console.error(error));
   // }, [medplum, id]);
 
   useEffect(() => {
     const fetchLinkedPatient = async (): Promise<void> => {
-      console.log('fetching patient');
       if (task?.for) {
         const patientId = resolveId(task.for);
         try {
@@ -55,7 +54,7 @@ export function TaskPage(): JSX.Element {
         }
       }
     };
-    
+
     fetchLinkedPatient().catch((err) => console.error(err));
   }, [medplum, task]);
 
@@ -81,9 +80,7 @@ export function TaskPage(): JSX.Element {
       <Grid.Col span={5}>
         <TaskDetails task={task} tabs={tabs} currentTab={currentTab} handleTabChange={handleTabChange} />
       </Grid.Col>
-      <Grid.Col span={3}>
-        {/* <Actions task={task} onTaskChange={onTaskChange} /> */}
-      </Grid.Col>
+      <Grid.Col span={3}>{/* <Actions task={task} onTaskChange={onTaskChange} /> */}</Grid.Col>
     </Grid>
   );
 }
@@ -92,11 +89,11 @@ interface PatientProfileProps {
   patient?: Patient;
 }
 
-const PatientProfile = memo(function PatientProfile({ patient }: PatientProfileProps): JSX.Element {
+function PatientProfile({ patient }: PatientProfileProps): JSX.Element {
   return (
     <Paper>{patient ? <PatientChart patient={patient} /> : <Document>No patient linked to this task</Document>}</Paper>
   );
-})
+}
 
 interface TaskDetailsProps {
   task: Task;

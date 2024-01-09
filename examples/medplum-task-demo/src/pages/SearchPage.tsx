@@ -12,10 +12,12 @@ export function SearchPage(): JSX.Element {
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
   const [isNewOpen, setIsNewOpen] = useState<boolean>(false);
+
   const [showTabs] = useState<boolean>(() => {
-    const search = parseSearchDefinition(window.location.search)
+    const search = parseSearchDefinition(window.location.pathname + window.location.search);
     return handleShowTabs(search);
   });
+
   const tabs = ['Active', 'Completed'];
   const [currentTab, setCurrentTab] = useState<string>(() => {
     const searchQuery = window.location.search;
@@ -49,7 +51,7 @@ export function SearchPage(): JSX.Element {
   const handleTabChange = (newTab: string): void => {
     setCurrentTab(newTab);
     console.log('handling tab change:', newTab);
-    
+
     if (!search) {
       throw new Error('Error: No valid search');
     }
@@ -58,7 +60,7 @@ export function SearchPage(): JSX.Element {
     const updatedSearchQuery = formatSearchQuery(updatedSearch);
     console.log(updatedSearchQuery);
     navigate(`/Task${updatedSearchQuery}`);
-  }
+  };
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;
@@ -66,7 +68,7 @@ export function SearchPage(): JSX.Element {
 
   return (
     <Document>
-      {showTabs ? 
+      {showTabs ? (
         <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
           <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
             {tabs.map((tab) => (
@@ -75,31 +77,33 @@ export function SearchPage(): JSX.Element {
               </Tabs.Tab>
             ))}
           </Tabs.List>
-          <Tabs.Panel value='active'>
-            <SearchControl 
-              search={search} 
-              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)} 
-              hideToolbar={true} 
-              hideFilters={true} 
+          <Tabs.Panel value="active">
+            <SearchControl
+              search={search}
+              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+              hideToolbar={false}
+              onNew={() => setIsNewOpen(true)}
+              hideFilters={true}
             />
           </Tabs.Panel>
-          <Tabs.Panel value='completed'>
-            <SearchControl 
-              search={search} 
-              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)} 
-              hideToolbar={true} 
-              hideFilters={true} 
+          <Tabs.Panel value="completed">
+            <SearchControl
+              search={search}
+              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+              hideToolbar={false}
+              onNew={() => setIsNewOpen(true)}
+              hideFilters={true}
             />
           </Tabs.Panel>
         </Tabs>
-        : 
-        <SearchControl 
-        search={search} 
-        onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)} 
-        hideToolbar={true} 
-        hideFilters={true} 
-      />
-      }
+      ) : (
+        <SearchControl
+          search={search}
+          onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+          hideToolbar={true}
+          hideFilters={true}
+        />
+      )}
       <CreateTaskModal opened={isNewOpen} onClose={() => setIsNewOpen(!isNewOpen)} />
     </Document>
   );
@@ -114,9 +118,9 @@ function handleInitialTab(search: SearchRequest): string {
     if (filter.value === 'completed') {
       const tab = filter.operator;
       if (tab === Operator.NOT) {
-        return 'active'
+        return 'active';
       } else {
-        return 'completed'
+        return 'completed';
       }
     }
   }
@@ -124,7 +128,6 @@ function handleInitialTab(search: SearchRequest): string {
 }
 
 function handleShowTabs(search: SearchRequest): boolean {
-  console.log(search);
   if (search.resourceType !== 'Task') {
     return false;
   }
@@ -132,7 +135,6 @@ function handleShowTabs(search: SearchRequest): boolean {
   if (!search.filters) {
     return true;
   }
-
 
   for (const filter of search.filters) {
     if (filter.code === 'performer') {
@@ -148,7 +150,7 @@ function updateSearch(newTab: string, search: SearchRequest): SearchRequest {
   const newCode = newTab === 'active' ? 'status:not' : 'status';
 
   if (filters.length === 0) {
-    filters.push({code: newCode, operator: Operator.EQUALS, value: 'completed'});
+    filters.push({ code: newCode, operator: Operator.EQUALS, value: 'completed' });
   } else {
     for (const filter of filters) {
       if (filter.value === 'completed') {
@@ -160,6 +162,6 @@ function updateSearch(newTab: string, search: SearchRequest): SearchRequest {
 
   return {
     ...search,
-    filters
-  }
+    filters,
+  };
 }
