@@ -1,7 +1,7 @@
 import { Grid, Paper, Tabs, Title } from '@mantine/core';
 import { formatCodeableConcept, getDisplayString, resolveId } from '@medplum/core';
 import { Patient, Task } from '@medplum/fhirtypes';
-import { DefaultResourceTimeline, Document, ResourceTable, useMedplum, useResource } from '@medplum/react';
+import { DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PatientChart } from '../components/patient-chart/PatientChart';
@@ -12,10 +12,7 @@ export function TaskPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const { id } = useParams() as { id: string };
-  const task = useResource<Task>({
-    reference: `Task/${id}`,
-  });
-  // const [task, setTask] = useState<Task | undefined>(undefined);
+  const [task, setTask] = useState<Task | undefined>(undefined);
   const tabs = ['Details', 'Timeline', 'Notes'];
   const [patient, setPatient] = useState<Patient | undefined>();
 
@@ -25,22 +22,20 @@ export function TaskPage(): JSX.Element {
     return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
   });
 
-  // useEffect(() => {
-  //   // Fetch the task that is specified in the URL
-  //   const fetchTask = async (): Promise<void> => {
-  //     console.log('fetching task')
-  //     try {
-  //       const taskData = await medplum.readResource('Task', id);
-  //       setTask(taskData);
-  //     } catch (error) {
-  //       console.error(error);
-  //     }
-  //   };
+  useEffect(() => {
+    // Fetch the task that is specified in the URL
+    const fetchTask = async (): Promise<void> => {
+      console.log('fetching task');
+      try {
+        const taskData = await medplum.readResource('Task', id);
+        setTask(taskData);
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-  //   // Fetch the patient that this task if for. See https://www.medplum.com/docs/careplans/tasks#task-assignment for more details
-
-  //   fetchTask().catch((error) => console.error(error));
-  // }, [medplum, id]);
+    fetchTask().catch((error) => console.error(error));
+  }, [medplum, id]);
 
   useEffect(() => {
     const fetchLinkedPatient = async (): Promise<void> => {
@@ -64,9 +59,9 @@ export function TaskPage(): JSX.Element {
     navigate(`/Task/${id}/${newTab}`);
   };
 
-  // const onTaskChange = (updatedTask: Task): void => {
-  //   setTask(updatedTask);
-  // };
+  const onTaskChange = (updatedTask: Task): void => {
+    setTask(updatedTask);
+  };
 
   if (!task) {
     return <Document>No Task found</Document>;
@@ -80,7 +75,9 @@ export function TaskPage(): JSX.Element {
       <Grid.Col span={5}>
         <TaskDetails task={task} tabs={tabs} currentTab={currentTab} handleTabChange={handleTabChange} />
       </Grid.Col>
-      <Grid.Col span={3}>{/* <Actions task={task} onTaskChange={onTaskChange} /> */}</Grid.Col>
+      <Grid.Col span={3}>
+        <Actions task={task} onTaskChange={onTaskChange} />
+      </Grid.Col>
     </Grid>
   );
 }
