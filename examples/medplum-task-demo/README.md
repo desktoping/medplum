@@ -1,4 +1,4 @@
-<h1 align="center">Medplum Task Example App</h1>
+<h1 align="center">Medplum Task Demo App</h1>
 <p align="center">A starter application for using the `Task` resource and related workflows with the Medplum platform.</p>
 <p align="center">
 <a href="https://github.com/medplum/medplum-hello-world/blob/main/LICENSE.txt">
@@ -14,17 +14,21 @@ This example app demonstrates the following:
 - Deleting a [`Task`](/docs/api/fhir/resources/task)
 - Viewing [`Task`](/docs/api/fhir/resources/task) queues that are relevant to the user
 
+![Task Demo Screenshot](medplum-task-demo-screenshot.png)
+
+### Code Organization
+
+This repo is organized in two main directories: `src` and `data`.
+
+The `src` directory contains the entire app, including `pages` and `components` directories. In addition, it contains a `bots` directory which has [Medplum Bots](/packages/docs/docs/bots/index.md) for use. The bots in the `example` directory are intended to be modified or extended by users, while those in `core` can be used to handle core workflows without modification.
+
+The `data` directory contains data that can be uploaded to use the demo. In the `example` directory is data that is meant to be used for learning and testing, not production. The `core` directory contains resource, terminologies, and more that are required to use this demo.
+
 ### Getting Started
 
 If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
 
-[Fork](https://github.com/medplum/medplum-task-example-app/fork) and clone the repo.
-
-To run the app, move into the `app` directory.
-
-```bash
-cd app
-```
+[Fork](https://github.com/medplum/medplum-task-demo/fork) and clone the repo.
 
 Next, install the dependencies
 
