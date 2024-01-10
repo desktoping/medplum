@@ -1,29 +1,26 @@
-import { AppShell, ErrorBoundary, Loading, Logo, NavbarLink, useMedplum, useMedplumProfile } from '@medplum/react';
+import {
+  Filter,
+  Operator,
+  ResourceArray,
+  SearchRequest,
+  formatSearchQuery,
+  getDisplayString,
+  getReferenceString,
+} from '@medplum/core';
+import { Practitioner, PractitionerRole } from '@medplum/fhirtypes';
+import { AppShell, Loading, Logo, NavbarLink, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconDatabaseImport, IconFileImport, IconGridDots, IconUser } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
-import { Timeline } from './components/Timeline';
-import { ResourceDetailsPage } from './pages/ResourceDetailsPage';
+import { Route, Routes } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { TaskPage } from './pages/TaskPage';
-import { Practitioner, PractitionerRole } from '@medplum/fhirtypes';
-import {
-  Filter,
-  formatSearchQuery,
-  getDisplayString,
-  getReferenceString,
-  Operator,
-  ResourceArray,
-  SearchRequest,
-} from '@medplum/core';
 import { UploadDataPage } from './pages/UploadDataPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
-  const location = useLocation();
   const profile = useMedplumProfile() as Practitioner;
   const [roles, setRoles] = useState<PractitionerRole[]>();
 
@@ -86,7 +83,7 @@ export function App(): JSX.Element | null {
     };
 
     fetchRoles().catch((error) => console.error(error));
-  }, [profile]);
+  }, [profile, medplum, userLinks]);
 
   // Update links on the sidebar to include links to queues assigned to the current user's role. For more details, see https://www.medplum.com/docs/careplans/tasks#task-assignment
   useEffect(() => {
@@ -128,7 +125,7 @@ export function App(): JSX.Element | null {
     };
 
     getLinks();
-  }, [roles]);
+  }, [roles, userLinks]);
 
   if (medplum.isLoading()) {
     return null;
@@ -153,25 +150,18 @@ export function App(): JSX.Element | null {
       resourceTypeSearchDisabled={true}
       headerSearchDisabled={true}
     >
-      <ErrorBoundary key={location.key}>
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
-            <Route path="/signin" element={<SignInPage />} />
-            <Route path="/:resourceType" element={<SearchPage />} />
-            <Route path="/:resourceType/:id" element={<ResourcePage />} />
-            <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
-            <Route path="/Task/:id" element={<TaskPage />}>
-              <Route index element={<TaskPage />} />
-              <Route path="details" element={<ResourceDetailsPage />} />
-              <Route path="timeline" element={<Timeline />} />
-              <Route path="notes" element={<TaskPage />} />
-            </Route>
-            <Route path="/Task" element={<SearchPage />} />
-            <Route path="/upload/:dataType" element={<UploadDataPage />} />
-          </Routes>
-        </Suspense>
-      </ErrorBoundary>
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
+          <Route path="/signin" element={<SignInPage />} />
+          <Route path="/:resourceType" element={<SearchPage />} />
+          <Route path="/:resourceType/:id" element={<ResourcePage />} />
+          <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
+          <Route path="/Task/:id/*" element={<TaskPage />} />
+          <Route path="/Task" element={<SearchPage />} />
+          <Route path="/upload/:dataType" element={<UploadDataPage />} />
+        </Routes>
+      </Suspense>
     </AppShell>
   );
 }
