@@ -1,5 +1,5 @@
 import { Grid, Paper, Tabs, Title } from '@mantine/core';
-import { getDisplayString, resolveId } from '@medplum/core';
+import { formatCodeableConcept, getDisplayString, resolveId } from '@medplum/core';
 import { Patient, Task } from '@medplum/fhirtypes';
 import { DefaultResourceTimeline, Document, ResourceTable, useMedplum, useResource } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -105,7 +105,7 @@ interface TaskDetailsProps {
 function TaskDetails({ task, tabs, currentTab, handleTabChange }: TaskDetailsProps): JSX.Element {
   return (
     <Paper p="md" key={task ? task.id : 'loading'}>
-      <Title>{task.code?.coding?.[0].display ? task.code?.coding[0].display : getDisplayString(task)}</Title>
+      <Title>{task.code ? formatCodeableConcept(task.code) : getDisplayString(task)}</Title>
       <Tabs value={currentTab.toLowerCase()} onTabChange={handleTabChange}>
         <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
           {tabs.map((tab) => (
