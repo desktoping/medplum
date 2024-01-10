@@ -85,7 +85,7 @@ export function PatientChart(props: PatientChartProps): JSX.Element | null {
         setVitals(observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs'));
       })
       .catch(console.error);
-  }, [medplum, id]);
+  }, [medplum, id, patientId]);
 
   if (!patient) {
     return null;

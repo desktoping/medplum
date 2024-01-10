@@ -7,14 +7,14 @@
       "resource": {
         "resourceType": "ValueSet",
         "id": "business-status",
-        "url": "https://example-business.org",
+        "url": "https://medplum.com/medplum-task-example-app/task-status-valueset",
         "name": "example-business-status-value-set",
         "title": "Example Business Status Value Set",
         "status": "active",
         "compose": {
           "include": [
             {
-              "system": "https://example-business.org/custom-business-codes",
+              "system": "https://medplum.com/medplum-task-example-app/task-status-valueset",
               "concept": [
                 {
                   "code": "doctor-sign-off-needed",
