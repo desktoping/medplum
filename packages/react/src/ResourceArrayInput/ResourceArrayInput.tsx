@@ -2,7 +2,7 @@ import { Group, Stack, createStyles } from '@mantine/core';
 import { InternalSchemaElement, getPathDisplayName, isEmpty, tryGetProfile } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { MouseEvent, useEffect, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
 import { assignValuesIntoSlices } from './ResourceArrayInput.utils';
@@ -32,7 +32,7 @@ export interface ResourceArrayInputProps {
 }
 
 export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JSX.Element {
-  const { property } = props;
+  const { property, onChange } = props;
   const medplum = useMedplum();
   const [loading, setLoading] = useState(true);
   const [slices, setSlices] = useState<SupportedSliceDefinition[]>([]);
@@ -40,6 +40,16 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
   const [defaultValue] = useState<any[]>(() => (Array.isArray(props.defaultValue) ? props.defaultValue : []));
   const [slicedValues, setSlicedValues] = useState<any[][]>([[]]);
   const { classes } = useStyles();
+
+  const invokeOnChange = useCallback(
+    (values: any[][]) => {
+      if (onChange) {
+        const cleaned = values.flat().filter((val) => val !== undefined);
+        onChange(cleaned);
+      }
+    },
+    [onChange]
+  );
 
   const propertyTypeCode = property.type[0]?.code;
   useEffect(() => {
@@ -99,16 +109,15 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
       });
   }, [medplum, property.slicing, propertyTypeCode, defaultValue]);
 
-  function setValuesWrapper(newValues: any[], sliceIndex: number): void {
-    const newSlicedValues = [...slicedValues];
-    newSlicedValues[sliceIndex] = newValues;
-    setSlicedValues(newSlicedValues);
-    if (props.onChange) {
-      // Remove any placeholder (i.e. undefined) values before propagating
-      const cleaned = newSlicedValues.flat().filter((val) => val !== undefined);
-      props.onChange(cleaned);
-    }
-  }
+  const setValuesWrapper = useCallback(
+    (newSliceValues: any[], sliceIndex: number): void => {
+      const newSlicedValues = [...slicedValues];
+      newSlicedValues[sliceIndex] = newSliceValues;
+      setSlicedValues(newSlicedValues);
+      invokeOnChange(newSlicedValues);
+    },
+    [invokeOnChange, slicedValues]
+  );
 
   if (loading) {
     return <div>Loading...</div>;
