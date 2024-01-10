@@ -84,6 +84,9 @@ export function SearchPage(): JSX.Element {
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
               hideFilters={true}
+              onChange={(e) => {
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+              }}
             />
           </Tabs.Panel>
           <Tabs.Panel value="completed">
@@ -93,6 +96,9 @@ export function SearchPage(): JSX.Element {
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
               hideFilters={true}
+              onChange={(e) => {
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+              }}
             />
           </Tabs.Panel>
         </Tabs>
@@ -102,6 +108,9 @@ export function SearchPage(): JSX.Element {
           onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
           hideToolbar={true}
           hideFilters={true}
+          onChange={(e) => {
+            navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          }}
         />
       )}
       <CreateTaskModal opened={isNewOpen} onClose={() => setIsNewOpen(!isNewOpen)} />

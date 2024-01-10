@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "rootDir": "src",
+    "rootDir": "core/src",
     "outDir": "dist",
     "lib": ["esnext"],
     "types": ["vitest/globals"],
@@ -29,6 +29,6 @@
     "noEmit": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["core/src/**/*.ts"],
   "exclude": ["node_modules"]
 }
