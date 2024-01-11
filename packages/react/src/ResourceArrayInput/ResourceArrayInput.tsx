@@ -2,7 +2,7 @@ import { Group, Stack, createStyles } from '@mantine/core';
 import { InternalSchemaElement, getPathDisplayName, isEmpty, tryGetProfile } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { MouseEvent, useCallback, useEffect, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
 import { assignValuesIntoSlices } from './ResourceArrayInput.utils';
@@ -10,6 +10,7 @@ import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { SupportedSliceDefinition, isSupportedSliceDefinition } from '../SliceInput/SliceInput.utils';
 import { SliceInput } from '../SliceInput/SliceInput';
+import useCallbackState from '../hooks/useCallbackState';
 
 const useStyles = createStyles((theme) => ({
   indented: {
@@ -31,6 +32,7 @@ export interface ResourceArrayInputProps {
   hideNonSliceValues?: boolean;
 }
 
+type SlicedValuesType = any[][];
 export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JSX.Element {
   const { property, onChange } = props;
   const medplum = useMedplum();
@@ -38,17 +40,29 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
   const [slices, setSlices] = useState<SupportedSliceDefinition[]>([]);
   // props.defaultValue should NOT be used after this; prefer the defaultValue state
   const [defaultValue] = useState<any[]>(() => (Array.isArray(props.defaultValue) ? props.defaultValue : []));
-  const [slicedValues, setSlicedValues] = useState<any[][]>([[]]);
+  const [slicedValues, setSlicedValues] = useCallbackState<SlicedValuesType>([[]], `ResourceArrayInput[${props.path}]`);
   const { classes } = useStyles();
 
-  const invokeOnChange = useCallback(
-    (values: any[][]) => {
+  // props.onChange should NOT be used directly; prefer onChangeWrapper
+  const onChangeWrapper = useCallback(
+    (values: SlicedValuesType) => {
       if (onChange) {
         const cleaned = values.flat().filter((val) => val !== undefined);
         onChange(cleaned);
       }
     },
     [onChange]
+  );
+
+  const setSliceValue = useCallback(
+    (newSliceValues: any[], sliceIndex: number): void => {
+      setSlicedValues((prevSlicedValues) => {
+        const newSlicedValues = [...prevSlicedValues];
+        newSlicedValues[sliceIndex] = newSliceValues;
+        return newSlicedValues;
+      }, onChangeWrapper);
+    },
+    [onChangeWrapper, setSlicedValues]
   );
 
   const propertyTypeCode = property.type[0]?.code;
@@ -107,17 +121,15 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
         console.error(reason);
         setLoading(false);
       });
-  }, [medplum, property.slicing, propertyTypeCode, defaultValue]);
+  }, [medplum, property.slicing, propertyTypeCode, defaultValue, setSlicedValues]);
 
-  const setValuesWrapper = useCallback(
-    (newSliceValues: any[], sliceIndex: number): void => {
-      const newSlicedValues = [...slicedValues];
-      newSlicedValues[sliceIndex] = newSliceValues;
-      setSlicedValues(newSlicedValues);
-      invokeOnChange(newSlicedValues);
-    },
-    [invokeOnChange, slicedValues]
-  );
+  const sliceOnChanges = useMemo(() => {
+    return slices.map((_slice, sliceIndex) => {
+      return (newSliceValue: any[]) => {
+        setSliceValue(newSliceValue, sliceIndex);
+      };
+    });
+  }, [setSliceValue, slices]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -140,9 +152,7 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
             path={props.path}
             property={property}
             defaultValue={slicedValues[sliceIndex]}
-            onChange={(newValue: any[]) => {
-              setValuesWrapper(newValue, sliceIndex);
-            }}
+            onChange={sliceOnChanges[sliceIndex]}
             testId={`slice-${slice.name}`}
           />
         );
@@ -161,7 +171,7 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
                 onChange={(newValue: any) => {
                   const newNonSliceValues = [...nonSliceValues];
                   newNonSliceValues[valueIndex] = newValue;
-                  setValuesWrapper(newNonSliceValues, nonSliceIndex);
+                  setSliceValue(newNonSliceValues, nonSliceIndex);
                 }}
                 defaultPropertyType={undefined}
                 outcome={props.outcome}
@@ -174,7 +184,7 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
                 killEvent(e);
                 const newNonSliceValues = [...nonSliceValues];
                 newNonSliceValues.splice(valueIndex, 1);
-                setValuesWrapper(newNonSliceValues, nonSliceIndex);
+                setSliceValue(newNonSliceValues, nonSliceIndex);
               }}
             />
           </Group>
@@ -187,7 +197,7 @@ export function ResourceArrayInput(props: Readonly<ResourceArrayInputProps>): JS
               killEvent(e);
               const newNonSliceValues = [...nonSliceValues];
               newNonSliceValues.push(undefined);
-              setValuesWrapper(newNonSliceValues, nonSliceIndex);
+              setSliceValue(newNonSliceValues, nonSliceIndex);
             }}
             testId="nonsliced-add"
           />
