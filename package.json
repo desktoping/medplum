@@ -4,7 +4,7 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "examples/**"
+    "examples/*"
   ],
   "scripts": {
     "build": "turbo run build --filter=!@medplum/docs",
@@ -72,8 +72,5 @@
     "react-dom": "18.2.0",
     "trim": "0.0.3",
     "vite": "5.0.5"
-  },
-  "dependencies": {
-    "@medplum/react": "^2.2.7"
   }
 }
