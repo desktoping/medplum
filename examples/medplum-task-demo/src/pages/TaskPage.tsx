@@ -1,10 +1,9 @@
-import { Grid, Paper, Tabs, Title } from '@mantine/core';
+import { Grid, Paper, Skeleton, Tabs, Title } from '@mantine/core';
 import { formatCodeableConcept, getDisplayString, resolveId } from '@medplum/core';
 import { Patient, Task } from '@medplum/fhirtypes';
-import { DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
+import { DefaultResourceTimeline, Document, PatientSummary, ResourceTable, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { PatientChart } from '../components/patient-chart/PatientChart';
+import { useNavigate, useParams } from 'react-router-dom';
 import { TaskActions } from '../components/actions/TaskActions';
 import { NotesPage } from './NotesPage';
 
@@ -15,6 +14,8 @@ export function TaskPage(): JSX.Element {
   const [task, setTask] = useState<Task | undefined>(undefined);
   const tabs = ['Details', 'Timeline', 'Notes'];
   const [patient, setPatient] = useState<Patient | undefined>();
+
+  const patientReference = task?.for;
 
   // Set the current tab to what is in the URL, otherwise default to 'Details'
   const [currentTab, setCurrentTab] = useState<string>(() => {
@@ -39,8 +40,8 @@ export function TaskPage(): JSX.Element {
 
   useEffect(() => {
     const fetchLinkedPatient = async (): Promise<void> => {
-      if (task?.for) {
-        const patientId = resolveId(task.for);
+      if (patientReference) {
+        const patientId = resolveId(patientReference);
         try {
           const patientData = patientId ? await medplum.readResource('Patient', patientId) : undefined;
           setPatient(patientData);
@@ -51,7 +52,7 @@ export function TaskPage(): JSX.Element {
     };
 
     fetchLinkedPatient().catch((err) => console.error(err));
-  }, [medplum, task]);
+  }, [medplum, patientReference]);
 
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string): void => {
@@ -88,7 +89,16 @@ interface PatientProfileProps {
 
 function PatientProfile({ patient }: PatientProfileProps): JSX.Element {
   return (
-    <Paper>{patient ? <PatientChart patient={patient} /> : <Document>No patient linked to this task</Document>}</Paper>
+    <>
+      {patient ? (
+        <PatientSummary
+          patient={patient}
+          background="url(https://images.unsplash.com/photo-1535961652354-923cb08225a7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8bmF0dXJlJTIwc21hbGx8ZW58MHwwfDB8fHww&auto=format&fit=crop&w=800&q=60)"
+        />
+      ) : (
+        <Skeleton visible={true} height={100} />
+      )}
+    </>
   );
 }
 
