@@ -2,6 +2,7 @@ import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@med
 import { readJson } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { vi } from 'vitest';
 import {
   assignToPractitionerBatch,
   assignToQueueBatch,
@@ -10,7 +11,6 @@ import {
   threadsWithTasks,
 } from './communication-data';
 import { handler } from './create-respond-to-message-task';
-import {vi} from 'vitest';
 
 describe('Create Respond to Message Task', async () => {
   beforeAll(() => {

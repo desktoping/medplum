@@ -1,6 +1,6 @@
 import { Button, Modal } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { getQuestionnaireAnswers, MedplumClient, PatchOperation, normalizeErrorString } from '@medplum/core';
+import { MedplumClient, PatchOperation, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import { CodeableConcept, Coding, Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
@@ -29,7 +29,7 @@ export function AssignRole(props: AssignTaskProps): JSX.Element {
       return;
     }
 
-    const updatedRole: CodeableConcept = {coding: [role]};
+    const updatedRole: CodeableConcept = { coding: [role] };
 
     const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
     const op: PatchOperation['op'] = task.performerType ? 'replace' : 'add';
@@ -54,14 +54,14 @@ export function AssignRole(props: AssignTaskProps): JSX.Element {
         color: 'red',
         icon: <IconCircleOff />,
         title: 'Error',
-        message: normalizeErrorString(error)
+        message: normalizeErrorString(error),
       });
     }
   };
 
   const onQuestionnaireSubmit = (formData: QuestionnaireResponse): void => {
     const role = getQuestionnaireAnswers(formData)['assign-role'].valueCoding;
-    
+
     if (role) {
       handleAssignToRole(role, props.task, medplum, props.onChange).catch((error) => console.error(error));
     }
