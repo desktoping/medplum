@@ -2,13 +2,13 @@ import { AppShell } from '@mantine/core';
 import { ErrorBoundary, useMedplum } from '@medplum/react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Router } from './Router';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { Loading } from './components/Loading';
-import { LandingPage } from './pages/landing';
 import { RegisterPage } from './pages/RegisterPage';
 import { SignInPage } from './pages/SignInPage';
-import { Router } from './Router';
+import { LandingPage } from './pages/landing';
 
 export function App(): JSX.Element | null {
   const location = useLocation();
