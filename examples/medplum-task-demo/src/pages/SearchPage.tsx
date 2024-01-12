@@ -13,9 +13,9 @@ export function SearchPage(): JSX.Element {
   const [search, setSearch] = useState<SearchRequest>();
   const [isNewOpen, setIsNewOpen] = useState<boolean>(false);
 
-  const [showTabs] = useState<boolean>(() => {
+  const [showTabs, setShowTabs] = useState<boolean>(() => {
     const search = parseSearchDefinition(window.location.pathname + window.location.search);
-    return handleShowTabs(search);
+    return shouldShowTabs(search);
   });
 
   const tabs = ['Active', 'Completed'];
@@ -25,6 +25,11 @@ export function SearchPage(): JSX.Element {
 
     return handleInitialTab(search);
   });
+
+  useEffect(() => {
+    const searchQuery = parseSearchDefinition(location.pathname + location.search);
+    setShowTabs(shouldShowTabs(searchQuery));
+  }, [location]);
 
   useEffect(() => {
     // Parse the search definition from the url and get the correct fields for the resource type
@@ -136,7 +141,7 @@ function handleInitialTab(search: SearchRequest): string {
   return 'active';
 }
 
-function handleShowTabs(search: SearchRequest): boolean {
+function shouldShowTabs(search: SearchRequest): boolean {
   if (search.resourceType !== 'Task') {
     return false;
   }
