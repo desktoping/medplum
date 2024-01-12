@@ -1,10 +1,10 @@
 import { MantineProvider, MantineThemeOverride } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { Notifications } from '@mantine/notifications';
+import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { App } from './App';
 
 const medplum = new MedplumClient({
@@ -33,15 +33,14 @@ const theme: MantineThemeOverride = {
 
 const container = document.getElementById('root') as HTMLDivElement;
 const root = createRoot(container);
+const router = createBrowserRouter([{ path: '*', element: <App /> }]);
 root.render(
   <StrictMode>
-    <BrowserRouter>
-      <MedplumProvider medplum={medplum}>
-        <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
-          <Notifications />
-          <App />
-        </MantineProvider>
-      </MedplumProvider>
-    </BrowserRouter>
+    <MedplumProvider medplum={medplum} navigate={router.navigate}>
+      <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
+        <Notifications />
+        <RouterProvider router={router} />
+      </MantineProvider>
+    </MedplumProvider>
   </StrictMode>
 );
