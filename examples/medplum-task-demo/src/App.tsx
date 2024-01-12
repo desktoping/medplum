@@ -93,7 +93,7 @@ export function App(): JSX.Element | null {
       logo={<Logo size={24} />}
       menus={[
         {
-          title: 'My Links',
+          title: 'Tasks',
           links: userLinks,
         },
         {
