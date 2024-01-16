@@ -64,7 +64,8 @@
     "clean": "rimraf dist storybook-static",
     "dev": "storybook dev -p 6006",
     "storybook": "storybook build",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "npm run build"
   },
   "devDependencies": {
     "@mantine/core": "7.3.2",
